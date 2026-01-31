@@ -1,0 +1,82 @@
+.exams-container {
+  min-height: 100vh;
+  padding: 100px 10%;
+  background-color: #f8fafc;
+}
+
+.exams-title {
+  font-size: 36px;
+  color: #0f172a;
+  margin-bottom: 30px;
+}
+
+/* Back button */
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #0f172a;
+  margin-bottom: 20px;
+}
+
+/* Search bar */
+.search-bar {
+  max-width: 400px;
+  margin-bottom: 40px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #cbd5f5;
+  outline: none;
+}
+
+/* Exam grid */
+.exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 25px;
+}
+
+/* Exam card */
+.exam-card {
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.exam-card h2 {
+  font-size: 20px;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.exam-card p {
+  font-size: 15px;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.start-btn {
+  margin-top: 15px;
+  padding: 10px 16px;
+  background-color: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.start-btn:hover {
+  background-color: #1e293b;
+}
+
+.no-result {
+  font-size: 16px;
+  color: #64748b;
+}

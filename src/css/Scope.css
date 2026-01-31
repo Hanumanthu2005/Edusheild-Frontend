@@ -1,0 +1,28 @@
+.section {
+  padding: 80px 12%;
+  background-color: #ffffff;
+}
+
+.section-title {
+  font-size: 32px;
+  color: #0f172a;
+  margin-bottom: 20px;
+}
+
+.section-text {
+  font-size: 17px;
+  color: #475569;
+  line-height: 1.7;
+  margin-bottom: 30px;
+}
+
+.scope-list {
+  list-style-type: disc;
+  padding-left: 20px;
+  color: #334155;
+}
+
+.scope-list li {
+  margin-bottom: 12px;
+  font-size: 16px;
+}

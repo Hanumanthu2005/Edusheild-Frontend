@@ -1,0 +1,43 @@
+.team-section {
+  background-color: #f4f6f8;
+  width: 100%;
+}
+
+/* Force 4 cards in one row */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 🔑 always 4 side-by-side */
+  gap: 30px;
+  margin-top: 40px;
+  width: 100%;
+}
+
+/* Card styling */
+.team-card {
+  background-color: #ffffff;
+  padding: 25px;
+  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Image */
+.team-card img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 15px;
+}
+
+/* Text */
+.team-card h3 {
+  font-size: 18px;
+  color: #0f172a;
+  margin-bottom: 5px;
+}
+
+.team-card p {
+  font-size: 15px;
+  color: #64748b;
+}

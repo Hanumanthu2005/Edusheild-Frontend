@@ -1,0 +1,16 @@
+.sub-title {
+  font-size: 22px;
+  color: #0f172a;
+  margin: 30px 0 10px;
+}
+
+.tech-list {
+  list-style-type: square;
+  padding-left: 20px;
+  color: #334155;
+}
+
+.tech-list li {
+  margin-bottom: 10px;
+  font-size: 16px;
+}

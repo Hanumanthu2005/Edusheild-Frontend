@@ -1,0 +1,87 @@
+.home-container {
+  min-height: 100vh;
+  padding: 50px 10%;
+  background-color: #f8fafc;
+}
+
+.home-title {
+  font-size: 36px;
+  color: #0f172a;
+  margin-bottom: 40px;
+}
+
+/* Search bar */
+.search-bar {
+  display: flex;
+  max-width: 600px;
+  margin-bottom: 50px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 12px 15px;
+  font-size: 16px;
+  border: 1px solid #cbd5f5;
+  border-radius: 6px 0 0 6px;
+  outline: none;
+}
+
+.search-bar button {
+  padding: 12px 20px;
+  background-color: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+}
+
+/* Dashboard grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+}
+
+/* Cards */
+.dashboard-card {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-card h2 {
+  font-size: 22px;
+  color: #0f172a;
+  margin-bottom: 15px;
+}
+
+.dashboard-card p {
+  font-size: 16px;
+  color: #475569;
+  margin-bottom: 20px;
+}
+
+.dashboard-card button {
+  padding: 10px 16px;
+  background-color: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.back-btn {
+  position: absolute;
+  top: 40px;
+  left: 10%;
+  background-color: transparent;
+  border: none;
+  color: #0f172a;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
