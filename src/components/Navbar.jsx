@@ -7,10 +7,10 @@ function Navbar() {
       <div className="logo">EduShield</div>
 
       <div className="nav-links">
-        <Link to="/home">Home</Link>
-        <a href="#scope">Scope</a>
-        <a href="#team">Team</a>
-        <a href="#about">About</a>
+        <Link to="/">Home</Link>
+        <Link to="/scope">Scope</Link>
+        <Link to="/team">Team</Link>
+        <Link to="/about">About</Link>
       </div>
     </nav>
   );

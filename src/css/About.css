@@ -1,16 +1,110 @@
-.sub-title {
-  font-size: 22px;
-  color: #0f172a;
-  margin: 30px 0 10px;
+/* =====================
+   About Section
+===================== */
+
+.section {
+  padding: clamp(40px, 6vw, 80px) clamp(16px, 8vw, 12%);
+  background-color: #ffffff;
+  animation: fadeUp 0.8s ease-out forwards;
 }
 
+.section-title {
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  color: #0f172a;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.section-text {
+  font-size: 1rem;
+  color: #475569;
+  line-height: 1.75;
+  max-width: 900px;
+  margin: 0 auto 28px;
+  text-align: center;
+}
+
+/* =====================
+   Sub Sections
+===================== */
+
+.sub-title {
+  font-size: 1.35rem;
+  color: #020617;
+  margin: 50px auto 14px;
+  max-width: 900px;
+  text-align: left;
+  position: relative;
+}
+
+.sub-title::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 22px;
+  background-color: #2563eb;
+  border-radius: 2px;
+}
+
+/* =====================
+   Tech Stack List
+===================== */
+
 .tech-list {
-  list-style-type: square;
+  max-width: 900px;
+  margin: 20px auto 0;
   padding-left: 20px;
-  color: #334155;
+  list-style-type: none;
 }
 
 .tech-list li {
-  margin-bottom: 10px;
-  font-size: 16px;
+  font-size: 1rem;
+  color: #334155;
+  margin-bottom: 12px;
+  padding-left: 18px;
+  position: relative;
+}
+
+.tech-list li::before {
+  content: "▹";
+  position: absolute;
+  left: 0;
+  color: #2563eb;
+  font-size: 1.1rem;
+}
+
+/* =====================
+   Animations
+===================== */
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =====================
+   Mobile Optimization
+===================== */
+
+@media (max-width: 600px) {
+  .section-title {
+    font-size: 1.7rem;
+  }
+
+  .sub-title {
+    font-size: 1.2rem;
+  }
+
+  .section-text {
+    text-align: left;
+  }
 }

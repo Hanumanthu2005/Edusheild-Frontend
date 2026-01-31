@@ -1,19 +1,25 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar";
 import "../css/Home.css";
+
 
 function Home() {
   const navigate = useNavigate();
+  const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    // Trigger animation on mount
+    setAnimate(true);
+  }, []);
 
   return (
-    <div className="home-container">
-      {/* Back Button */}
-      <button className="back-btn" onClick={() => navigate("/")}>
-        ← Back
-      </button>
+    <>
+      <Navbar />
+      <div className={`home-container ${animate ? "home-enter" : ""}`}>
 
       <h1 className="home-title">Online Examination Dashboard</h1>
 
-      {/* Dashboard Cards */}
       <div className="dashboard-grid">
         <div className="dashboard-card">
           <h2>📘 Exams</h2>
@@ -24,9 +30,7 @@ function Home() {
         <div className="dashboard-card">
           <h2>📊 Results</h2>
           <p>Check your exam results and performance analysis.</p>
-          <button onClick={() => navigate("/results")}>
-            View Results
-          </button>
+          <button onClick={() => navigate("/results")}>View Results</button>
         </div>
 
         <div className="dashboard-card">
@@ -42,6 +46,7 @@ function Home() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

@@ -1,28 +1,167 @@
 .section {
-  padding: 80px 12%;
+  padding: clamp(40px, 6vw, 80px) clamp(16px, 8vw, 12%);
   background-color: #ffffff;
+  animation: fadeUp 0.8s ease-out forwards;
 }
 
+
 .section-title {
-  font-size: 32px;
+  font-size: clamp(1.8rem, 4vw, 2rem);
   color: #0f172a;
   margin-bottom: 20px;
+  text-align: center;
 }
 
 .section-text {
-  font-size: 17px;
+  font-size: 1rem;
   color: #475569;
   line-height: 1.7;
-  margin-bottom: 30px;
+  margin-bottom: 50px;
+  text-align: center;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.scope-list {
-  list-style-type: disc;
-  padding-left: 20px;
-  color: #334155;
+/* =====================
+   Stack Layout
+===================== */
+
+.scope-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.scope-list li {
-  margin-bottom: 12px;
-  font-size: 16px;
+/* Cards (stacked) */
+.scope-card {
+  background-color: #f8fafc;
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  opacity: 0;
+  animation: fadeUp 0.6s ease-out forwards;
 }
+
+.scope-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Image */
+.scope-card img {
+  width: 100px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+
+/* Text */
+.scope-card h3 {
+  font-size: 1.15rem;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.scope-card p {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* =====================
+   Mobile Stack
+===================== */
+
+@media (max-width: 600px) {
+  .scope-card {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+
+  .scope-card img {
+    width: 60px;
+  }
+}
+
+
+/* Cards */
+.scope-card {
+  background-color: #f8fafc;
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.scope-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.scope-card img {
+  width: 80px;
+  height: auto;
+  margin-bottom: 20px;
+  animation: popIn 0.6s ease-out forwards;
+}
+
+
+.scope-card h3 {
+  font-size: 1.1rem;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.scope-card p {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  .scope-card {
+    padding: 20px;
+  }
+
+  .scope-card img {
+    width: 64px;
+  }
+}
+/* =====================
+   Page Load Animations
+===================== */
+
+/* Fade + slide for whole section */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale animation for icons */
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.scope-card:nth-child(1) { animation-delay: 0.1s; }
+.scope-card:nth-child(2) { animation-delay: 0.2s; }
+.scope-card:nth-child(3) { animation-delay: 0.3s; }
+.scope-card:nth-child(4) { animation-delay: 0.4s; }
+.scope-card:nth-child(5) { animation-delay: 0.5s; }
+.scope-card:nth-child(6) { animation-delay: 0.6s; }

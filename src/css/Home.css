@@ -1,87 +1,137 @@
+/* =====================
+   Base Layout
+===================== */
+
 .home-container {
   min-height: 100vh;
-  padding: 50px 10%;
+  padding: clamp(24px, 5vw, 50px) clamp(16px, 6vw, 10%);
   background-color: #f8fafc;
+  position: relative;
 }
 
 .home-title {
-  font-size: 36px;
+  font-size: clamp(1.8rem, 4vw, 2.25rem);
   color: #0f172a;
-  margin-bottom: 40px;
+  margin-top: 100px;
+  margin-bottom: 100px;
+  text-align: center;
 }
 
-/* Search bar */
-.search-bar {
-  display: flex;
-  max-width: 600px;
-  margin-bottom: 50px;
-}
 
-.search-bar input {
-  flex: 1;
-  padding: 12px 15px;
-  font-size: 16px;
-  border: 1px solid #cbd5f5;
-  border-radius: 6px 0 0 6px;
-  outline: none;
-}
+/* =====================
+   Dashboard Grid
+===================== */
 
-.search-bar button {
-  padding: 12px 20px;
-  background-color: #0f172a;
-  color: white;
-  border: none;
-  border-radius: 0 6px 6px 0;
-  cursor: pointer;
-}
-
-/* Dashboard grid */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
 }
 
-/* Cards */
+/* =====================
+   Cards
+===================== */
+
 .dashboard-card {
   background-color: #ffffff;
-  padding: 30px;
+  padding: 28px;
   border-radius: 12px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12);
 }
 
 .dashboard-card h2 {
-  font-size: 22px;
+  font-size: 1.25rem;
   color: #0f172a;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
 }
 
 .dashboard-card p {
-  font-size: 16px;
+  font-size: 0.95rem;
   color: #475569;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
+  line-height: 1.5;
 }
 
+/* =====================
+   Buttons
+===================== */
+
 .dashboard-card button {
-  padding: 10px 16px;
+  padding: 10px 18px;
   background-color: #1e293b;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-}
-.back-btn {
-  position: absolute;
-  top: 40px;
-  left: 10%;
-  background-color: transparent;
-  border: none;
-  color: #0f172a;
-  font-size: 16px;
-  cursor: pointer;
-  font-weight: 500;
+  font-size: 0.95rem;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.back-btn:hover {
-  text-decoration: underline;
+.dashboard-card button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-card button:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* =====================
+   Mobile Optimizations
+===================== */
+
+@media (max-width: 600px) {
+  .home-title {
+    margin-bottom: 30px;
+  }
+
+  .dashboard-card {
+    padding: 22px;
+  }
+
+  .dashboard-card h2 {
+    font-size: 1.15rem;
+  }
+
+  .dashboard-card p {
+    font-size: 0.9rem;
+  }
+}
+/* =====================
+   Page Enter Animation
+===================== */
+
+/* Initial state */
+.home-container {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+/* Animated state */
+.home-enter {
+  animation: slideUpFade 0.7s ease-out forwards;
+}
+
+/* Keyframes */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
