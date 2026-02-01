@@ -6,7 +6,7 @@
 /* Common full-screen section */
 .full-section {
   height: calc(100vh - 70px);  /* 🔑 subtract navbar height */
-  margin-top: 70px;            /* 🔑 push content below fixed navbar */
+  top: 70px;            /* 🔑 push content below fixed navbar */
   display: flex;
   align-items: center;
   justify-content: center;
