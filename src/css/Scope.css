@@ -1,146 +1,153 @@
-.section {
-  padding: clamp(40px, 6vw, 80px) clamp(16px, 8vw, 12%);
-  background-color: #ffffff;
-  animation: fadeUp 0.8s ease-out forwards;
+.scope-section {
+  background-color: #f4f6f8;
+  width: 100%;
+  padding: 80px 20px;
+  min-height: 100vh;
 }
 
+/* Header styling */
+.scope-header {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: fadeInDown 0.8s ease-out;
+}
 
 .section-title {
-  font-size: clamp(1.8rem, 4vw, 2rem);
+  font-size: 42px;
   color: #0f172a;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.title-decoration {
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  margin: 0 auto;
+  border-radius: 2px;
+  animation: expandWidth 1s ease-out;
+}
+
+/* Intro text */
+.intro-text {
+  max-width: 900px;
+  margin: 0 auto 60px;
   text-align: center;
+  padding: 0 20px;
 }
 
 .section-text {
-  font-size: 1rem;
-  color: #475569;
-  line-height: 1.7;
-  margin-bottom: 50px;
-  text-align: center;
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: 17px;
+  line-height: 1.8;
+  color: #64748b;
+  margin: 0;
 }
 
-/* =====================
-   Stack Layout
-===================== */
-
-.scope-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  max-width: 900px;
+/* Scope grid */
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 35px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
-/* Cards (stacked) */
+/* Scope cards */
 .scope-card {
-  background-color: #f8fafc;
-  border-radius: 14px;
-  padding: 24px;
-  text-align: center;
+  background-color: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   opacity: 0;
-  animation: fadeUp 0.6s ease-out forwards;
+  animation-fill-mode: forwards;
+  cursor: pointer;
 }
 
 .scope-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  transform: translateY(-12px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
 }
 
-/* Image */
-.scope-card img {
-  width: 100px;
-  height: auto;
-  flex-shrink: 0;
-}
-
-
-/* Text */
-.scope-card h3 {
-  font-size: 1.15rem;
-  color: #0f172a;
-  margin-bottom: 8px;
-}
-
-.scope-card p {
-  font-size: 0.95rem;
-  color: #475569;
-  line-height: 1.5;
-}
-
-/* =====================
-   Mobile Stack
-===================== */
-
-@media (max-width: 600px) {
-  .scope-card {
-    flex-direction: column;
-    text-align: center;
-    align-items: center;
-  }
-
-  .scope-card img {
-    width: 60px;
-  }
-}
-
-
-/* Cards */
-.scope-card {
-  background-color: #f8fafc;
-  border-radius: 14px;
-  padding: 24px;
-  text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.scope-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+/* Image container */
+.image-container {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
 }
 
 .scope-card img {
-  width: 80px;
-  height: auto;
-  margin-bottom: 20px;
-  animation: popIn 0.6s ease-out forwards;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
+.scope-card:hover img {
+  transform: scale(1.15);
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.scope-card:hover .image-overlay {
+  opacity: 1;
+}
+
+/* Card content */
+.card-content {
+  padding: 30px 25px;
+}
 
 .scope-card h3 {
-  font-size: 1.1rem;
+  font-size: 20px;
   color: #0f172a;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+}
+
+.scope-card:hover h3 {
+  color: #3b82f6;
+}
+
+.title-underline {
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  margin-bottom: 15px;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.scope-card:hover .title-underline {
+  width: 70px;
 }
 
 .scope-card p {
-  font-size: 0.95rem;
-  color: #475569;
-  line-height: 1.5;
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.7;
+  margin: 0;
 }
 
-/* Mobile tweaks */
-@media (max-width: 600px) {
-  .scope-card {
-    padding: 20px;
-  }
-
-  .scope-card img {
-    width: 64px;
-  }
-}
-/* =====================
-   Page Load Animations
-===================== */
-
-/* Fade + slide for whole section */
-@keyframes fadeUp {
+/* Animations */
+@keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(-30px);
   }
   to {
     opacity: 1;
@@ -148,20 +155,88 @@
   }
 }
 
-/* Scale animation for icons */
-@keyframes popIn {
+@keyframes expandWidth {
+  from {
+    width: 0;
+  }
+  to {
+    width: 80px;
+  }
+}
+
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: scale(0.85);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
-.scope-card:nth-child(1) { animation-delay: 0.1s; }
-.scope-card:nth-child(2) { animation-delay: 0.2s; }
-.scope-card:nth-child(3) { animation-delay: 0.3s; }
-.scope-card:nth-child(4) { animation-delay: 0.4s; }
-.scope-card:nth-child(5) { animation-delay: 0.5s; }
-.scope-card:nth-child(6) { animation-delay: 0.6s; }
+
+.fade-in {
+  animation: fadeInDown 0.8s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.8s ease-out forwards;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .scope-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .scope-section {
+    padding: 60px 15px;
+  }
+
+  .section-title {
+    font-size: 32px;
+  }
+
+  .scope-grid {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    max-width: 500px;
+  }
+
+  .image-container {
+    height: 200px;
+  }
+
+  .intro-text {
+    margin-bottom: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    font-size: 26px;
+  }
+
+  .section-text {
+    font-size: 15px;
+  }
+
+  .card-content {
+    padding: 25px 20px;
+  }
+
+  .scope-card h3 {
+    font-size: 18px;
+  }
+
+  .scope-card p {
+    font-size: 14px;
+  }
+
+  .image-container {
+    height: 180px;
+  }
+}

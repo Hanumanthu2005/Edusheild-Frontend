@@ -6,6 +6,7 @@ import Scope from "./pages/Scope";
 import Team from "./pages/Team";
 import About from "./pages/About";
 import Results from "./pages/Results";
+import ExamPage from "./pages/ExamPage";
 
 function App() {
   return (
@@ -18,7 +19,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/exams" element={<ViewExams />} />
         <Route path="/results" element={<Results />} />
-
+        <Route path="/exam" element={<ExamPage />} />
       </Routes>
     </BrowserRouter>
   );
