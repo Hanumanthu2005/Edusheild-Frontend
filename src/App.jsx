@@ -9,6 +9,8 @@ import Results from "./pages/Results";
 import ExamPage from "./pages/ExamPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminRoute from "./components/AdminRoute";
 
 function App() {
   return (
@@ -24,6 +26,14 @@ function App() {
         <Route path="/exams" element={<ViewExams />} />
         <Route path="/results" element={<Results />} />
         <Route path="/exam" element={<ExamPage />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

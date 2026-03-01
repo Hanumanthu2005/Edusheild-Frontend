@@ -116,7 +116,6 @@ function Login() {
       if (result.error) {
         setError(result.error);
         setIsLoggingIn(false);
-        // Reset snapshot on error
         setSnapshotTaken(false);
         setSnapshotData("");
         if (videoRef.current) {
@@ -126,7 +125,14 @@ function Login() {
         // Success
         localStorage.setItem("token", result.token);
         localStorage.setItem("session_id", result.session_id);
-        navigate("/home");
+        localStorage.setItem("role", result.role);
+        console.log(result.role);
+
+        if (result.role === "admin") {
+            navigate("/admin");
+        } else {
+            navigate("/exam");
+        }
       }
     } catch (err) {
       setError("Failed to connect to server. Please try again.");
