@@ -11,6 +11,16 @@ function LandingPage() {
     setAnimate(true);
   }, []);
 
+  const handleHomeNavigation = () => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    navigate("/home");   // or "/dashboard"
+  } else {
+    navigate("/register");
+  }
+};
+
   return (
     <div className="landing">
       <Navbar />
@@ -63,7 +73,7 @@ function LandingPage() {
 
           <button
             className="home-btn"
-            onClick={() => navigate("/home")}
+            onClick={handleHomeNavigation}
           >
             <span>Go to Exam Dashboard</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

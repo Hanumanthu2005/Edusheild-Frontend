@@ -7,11 +7,15 @@ import Team from "./pages/Team";
 import About from "./pages/About";
 import Results from "./pages/Results";
 import ExamPage from "./pages/ExamPage";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<LandingPage />} />
         <Route path="/scope" element={<Scope />} />
         <Route path="/team" element={<Team />} />
