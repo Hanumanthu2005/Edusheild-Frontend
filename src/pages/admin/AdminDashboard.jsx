@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../css/AdminDashboard.css";
+import "../../css/AdminDashboard.css";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -13,6 +13,8 @@ function AdminDashboard() {
     totalStudents: 0,
     avgWarnings: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setAnimate(true);
@@ -20,49 +22,89 @@ function AdminDashboard() {
   }, []);
 
   const fetchDashboardData = async () => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  if (!token) {
-    console.error("No token found");
-    return;
-  }
-
-  try {
-    const examsRes = await fetch("http://localhost:5001/api/admin/exams", {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    const examsData = await examsRes.json();
-
-    if (Array.isArray(examsData)) {
-      setActiveExams(examsData);
-    } else {
-      console.error("Exam API Error:", examsData);
+    if (!token) {
+      console.error("No token found");
+      setError("Authentication required");
+      setLoading(false);
+      return;
     }
 
-    const sessionsRes = await fetch(
-      "http://localhost:5001/api/admin/sessions/active",
-      {
+    setLoading(true);
+    setError("");
+
+    try {
+      // Fetch exams
+      const examsRes = await fetch("http://localhost:5001/api/admin/exams", {
         headers: {
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
         }
+      });
+
+      if (!examsRes.ok) {
+        throw new Error(`Failed to fetch exams: ${examsRes.status}`);
       }
-    );
 
-    const sessionsData = await sessionsRes.json();
+      const examsData = await examsRes.json();
+      console.log("Exams data:", examsData);
 
-    if (Array.isArray(sessionsData)) {
-      setActiveSessions(sessionsData);
-    } else {
-      console.error("Sessions API Error:", sessionsData);
+      if (Array.isArray(examsData)) {
+        setActiveExams(examsData);
+      } else {
+        console.error("Exams API did not return an array:", examsData);
+        setActiveExams([]);
+      }
+
+      // Fetch active sessions
+      const sessionsRes = await fetch(
+        "http://localhost:5001/api/admin/sessions/active",
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      if (!sessionsRes.ok) {
+        throw new Error(`Failed to fetch sessions: ${sessionsRes.status}`);
+      }
+
+      const sessionsData = await sessionsRes.json();
+      console.log("Sessions data:", sessionsData);
+
+      if (Array.isArray(sessionsData)) {
+        setActiveSessions(sessionsData);
+      } else {
+        console.error("Sessions API did not return an array:", sessionsData);
+        setActiveSessions([]);
+      }
+
+      // Calculate stats
+      const totalExams = Array.isArray(examsData) ? examsData.length : 0;
+      const totalSessions = Array.isArray(sessionsData) ? sessionsData.length : 0;
+      const avgWarnings = totalSessions > 0 
+        ? (sessionsData.reduce((sum, s) => sum + (s.warnings || 0), 0) / totalSessions).toFixed(1)
+        : "0";
+
+      setStats({
+        totalExams: totalExams,
+        activeSessions: totalSessions,
+        totalStudents: totalSessions,
+        avgWarnings: avgWarnings
+      });
+
+    } catch (error) {
+      console.error("Fetch error:", error);
+      setError(error.message || "Failed to load dashboard data");
+      setActiveExams([]);
+      setActiveSessions([]);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (error) {
-    console.error("Fetch error:", error);
-  }
-};
+  };
 
   const handleTerminateSession = async (sessionId) => {
     if (!window.confirm("Are you sure you want to terminate this session?")) return;
@@ -71,22 +113,64 @@ function AdminDashboard() {
       const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:5001/api/admin/sessions/${sessionId}/terminate`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
       });
       
       if (response.ok) {
         alert("Session terminated successfully");
         fetchDashboardData();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to terminate session: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Failed to terminate session:", error);
+      alert("Failed to terminate session. Please try again.");
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to logout?")) {
+      // Clear all stored data
+      localStorage.removeItem("token");
+      localStorage.removeItem("session_id");
+      
+      // Navigate to login page
+      navigate("/login");
     }
   };
 
   return (
     <div className={`admin-dashboard ${animate ? "admin-enter" : ""}`}>
-      {/* Header */}
+      {/* Header with Logout */}
       <div className="admin-header">
+        <div className="header-top">
+          <div className="brand-section">
+            <div className="brand-logo-admin">
+              <div className="logo-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <span className="brand-name">EduShield Admin</span>
+            </div>
+          </div>
+          
+          <button className="logout-btn" onClick={handleLogout}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>Logout</span>
+          </button>
+        </div>
+
         <div className="header-content">
           <div className="admin-badge">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -100,6 +184,19 @@ function AdminDashboard() {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="error-banner">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{error}</span>
+          <button onClick={fetchDashboardData}>Retry</button>
+        </div>
+      )}
+
       <div className="admin-content">
         {/* Stats Cards */}
         <div className="stats-grid">
@@ -111,7 +208,7 @@ function AdminDashboard() {
               </svg>
             </div>
             <div className="stat-info">
-              <div className="stat-value">{stats.totalExams}</div>
+              <div className="stat-value">{loading ? "..." : stats.totalExams}</div>
               <div className="stat-label">Total Exams</div>
             </div>
           </div>
@@ -126,7 +223,7 @@ function AdminDashboard() {
               </svg>
             </div>
             <div className="stat-info">
-              <div className="stat-value">{stats.activeSessions}</div>
+              <div className="stat-value">{loading ? "..." : stats.activeSessions}</div>
               <div className="stat-label">Active Sessions</div>
             </div>
           </div>
@@ -139,7 +236,7 @@ function AdminDashboard() {
               </svg>
             </div>
             <div className="stat-info">
-              <div className="stat-value">{stats.totalStudents}</div>
+              <div className="stat-value">{loading ? "..." : stats.totalStudents}</div>
               <div className="stat-label">Active Students</div>
             </div>
           </div>
@@ -153,7 +250,7 @@ function AdminDashboard() {
               </svg>
             </div>
             <div className="stat-info">
-              <div className="stat-value">{stats.avgWarnings}</div>
+              <div className="stat-value">{loading ? "..." : stats.avgWarnings}</div>
               <div className="stat-label">Avg Warnings</div>
             </div>
           </div>
@@ -202,16 +299,21 @@ function AdminDashboard() {
         <div className="active-sessions-section slide-up" style={{ animationDelay: '0.6s' }}>
           <div className="section-header">
             <h2 className="section-title">Active Sessions</h2>
-            <button className="refresh-btn" onClick={fetchDashboardData}>
+            <button className="refresh-btn" onClick={fetchDashboardData} disabled={loading}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="23 4 23 10 17 10"/>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
               </svg>
-              Refresh
+              {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
 
-          {activeSessions.length > 0 ? (
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading sessions...</p>
+            </div>
+          ) : activeSessions.length > 0 ? (
             <div className="sessions-table">
               <table>
                 <thead>
@@ -280,34 +382,56 @@ function AdminDashboard() {
             </button>
           </div>
 
-          <div className="exams-grid">
-            {activeExams.map((exam, index) => (
-              <div 
-                className="exam-card" 
-                key={exam.id}
-                style={{ animationDelay: `${0.8 + index * 0.1}s` }}
-                onClick={() => navigate(`/admin/exams/${exam.id}`)}
-              >
-                <h3>{exam.title}</h3>
-                <div className="exam-meta">
-                  <div className="meta-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    <span>{exam.duration} mins</span>
-                  </div>
-                  <div className="meta-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                    <span>{exam.total_marks} marks</span>
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading exams...</p>
+            </div>
+          ) : activeExams.length > 0 ? (
+            <div className="exams-grid">
+              {activeExams.slice(0, 4).map((exam, index) => (
+                <div 
+                  className="exam-card" 
+                  key={exam.id}
+                  style={{ animationDelay: `${0.8 + index * 0.1}s` }}
+                  onClick={() => navigate(`/admin/exams/${exam.id}`)}
+                >
+                  <h3>{exam.title}</h3>
+                  <div className="exam-meta">
+                    <div className="meta-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      <span>{exam.duration} mins</span>
+                    </div>
+                    <div className="meta-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                      <span>{exam.total_marks} marks</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              <h3>No Exams Found</h3>
+              <p>Create your first exam to get started</p>
+              <button 
+                className="create-exam-btn"
+                onClick={() => navigate("/admin/exams/create")}
+              >
+                Create Exam
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

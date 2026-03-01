@@ -9,8 +9,11 @@ import Results from "./pages/Results";
 import ExamPage from "./pages/ExamPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminRoute from "./components/AdminRoute";
+import CreateExam from "./pages/admin/CreateExam";
+import ManageExams from "./pages/admin/ManageExams";
+import AdminLayout from "./pages/admin/AdminLayout";
 
 function App() {
   return (
@@ -26,14 +29,14 @@ function App() {
         <Route path="/exams" element={<ViewExams />} />
         <Route path="/results" element={<Results />} />
         <Route path="/exam" element={<ExamPage />} />
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          }
-        />
+
+        <Route path="/admin" element={<AdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="exams" element={<ManageExams />} />
+            <Route path="exams/create" element={<CreateExam />} />
+          </Route>
+        </Route>  
       </Routes>
     </BrowserRouter>
   );
