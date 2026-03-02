@@ -131,7 +131,7 @@ function Login() {
         if (result.role === "admin") {
             navigate("/admin");
         } else {
-            navigate("/exam");
+            navigate("/home");
         }
       }
     } catch (err) {

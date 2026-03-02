@@ -28,7 +28,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/exams" element={<ViewExams />} />
         <Route path="/results" element={<Results />} />
-        <Route path="/exam" element={<ExamPage />} />
+        <Route path="/exam/:examId" element={<ExamPage />} />
 
         <Route path="/admin" element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
