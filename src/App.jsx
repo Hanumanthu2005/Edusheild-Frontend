@@ -17,7 +17,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminResultsPage from "./pages/admin/AdminResultsPage";
 import AdminSessionPage from "./pages/admin/AdminSessionPage";
 import AdminViolationsPage from "./pages/admin/AdminViolationsPage";
-import ExamHistoryPage from "./pages/ExamhistoryPage";
+import ExamHistoryPage from "./pages/ExamHistoryPage";
 import AdminFeedbackPage from "./pages/admin/AdminFeedBackpage";
 
 function App() {
