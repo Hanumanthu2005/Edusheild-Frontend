@@ -132,19 +132,6 @@
   align-items: center;
 }
 
-.input-icon {
-  position: absolute;
-  left: 14px;
-  /* Remove top/transform — let flexbox center it instead */
-  color: #94a3b8;
-  pointer-events: none;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  /* Vertically centered via the flex parent */
-  align-self: center;
-}
 
 .input-wrapper input {
   width: 100%;

@@ -1,0 +1,262 @@
+/* ─── AdminSessionPage.css ───────────────────────────────────────────────────── */
+
+.asp-page {
+  background-color: #f4f6f8;
+  min-height: 100vh;
+  padding: 80px 32px 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+.asp-page--ready { opacity: 1; transform: translateY(0); }
+
+/* ── Shared header ────────────────────────────────────────────────────────── */
+.page-header   { text-align: center; margin-bottom: 48px; position: relative; animation: aspFadeDown 0.8s ease-out; }
+.page-badge    { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg,rgba(59,130,246,0.1),rgba(139,92,246,0.1)); border: 1px solid rgba(59,130,246,0.25); border-radius: 50px; color: #3b82f6; font-size: 13px; font-weight: 600; margin-bottom: 18px; animation: aspFadeDown 0.8s ease-out 0.2s backwards; letter-spacing: .4px; }
+.page-title    { font-size: 40px; color: #0f172a; margin: 0 0 12px; font-weight: 700; animation: aspFadeDown 0.8s ease-out 0.3s backwards; }
+.asp-title-name{ color: #3b82f6; }
+.page-subtitle { font-size: 15px; color: #64748b; margin: 0 0 20px; animation: aspFadeDown 0.8s ease-out 0.4s backwards; }
+.title-decoration { width: 80px; height: 4px; background: linear-gradient(90deg,#3b82f6,#8b5cf6); margin: 0 auto; border-radius: 2px; animation: aspExpand 1s ease-out 0.5s backwards; }
+
+.asp-back-btn {
+  display: inline-flex; align-items: center; gap: 7px; position: absolute; left: 0; top: 4px;
+  padding: 9px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  color: #64748b; font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: all 0.25s; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.asp-back-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; transform: translateX(-4px); }
+
+/* ── Alerts / loading ─────────────────────────────────────────────────────── */
+.asp-error-banner { display: flex; align-items: center; gap: 10px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; padding: 14px 20px; border-radius: 12px; margin-bottom: 28px; font-size: 14px; font-weight: 500; }
+.asp-retry-btn { margin-left: auto; padding: 6px 14px; border: 1px solid #ef4444; background: transparent; color: #ef4444; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.asp-retry-btn:hover { background: #ef4444; color: #fff; }
+.asp-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 80px 0; color: #64748b; font-size: 15px; }
+.asp-spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: aspSpin 0.8s linear infinite; }
+
+/* ── Profile strip ────────────────────────────────────────────────────────── */
+.asp-profile-strip { display: flex; align-items: center; gap: 18px; padding: 20px 28px; margin-bottom: 24px; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.07); animation: aspSlideUp 0.5s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s backwards; }
+.asp-profile-avatar { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg,#3b82f6,#8b5cf6); color: #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(59,130,246,0.3); }
+.asp-profile-info { flex: 1; }
+.asp-profile-name { margin: 0 0 4px; font-size: 17px; font-weight: 700; color: #0f172a; }
+.asp-profile-meta { font-size: 13px; color: #64748b; }
+.asp-profile-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.asp-action-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; color: #64748b; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.25s; }
+.asp-action-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
+.asp-action-btn--primary { background: linear-gradient(135deg,#3b82f6,#8b5cf6); border-color: transparent; color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.asp-action-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(59,130,246,0.4); color: #fff; background: linear-gradient(135deg,#3b82f6,#8b5cf6); }
+
+/* ── Stat grid ────────────────────────────────────────────────────────────── */
+.asp-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 28px; }
+.asp-stat-card {
+  background: #ffffff; border-radius: 16px; padding: 24px 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+  display: flex; align-items: center; gap: 16px;
+  position: relative; overflow: hidden;
+  opacity: 0; transform: translateY(30px);
+  animation: aspSlideUp 0.55s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+.asp-stat-card:hover { transform: translateY(-6px); box-shadow: 0 20px 45px rgba(0,0,0,0.13); }
+.asp-stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.asp-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.asp-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+.asp-stat-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+.asp-stat-sub   { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+/* ── Split layout ─────────────────────────────────────────────────────────── */
+.asp-split { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: flex-start; }
+
+/* ── Left col ─────────────────────────────────────────────────────────────── */
+.asp-left-col { display: flex; flex-direction: column; gap: 14px; }
+
+.asp-list-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.asp-status-tabs { display: flex; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; flex: 1; }
+.asp-tab {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 8px; border: none; background: transparent;
+  font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer;
+  transition: all .2s; white-space: nowrap;
+}
+.asp-tab:hover { background: #f8fafc; color: #0f172a; }
+.asp-tab--active { background: linear-gradient(135deg,#3b82f6,#8b5cf6); color: #fff; }
+.asp-tab-count {
+  min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
+  background: rgba(255,255,255,0.25); color: inherit;
+  font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+}
+.asp-tab:not(.asp-tab--active) .asp-tab-count { background: #f1f5f9; color: #64748b; }
+
+.asp-sort-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer;
+  transition: all .2s; white-space: nowrap;
+}
+.asp-sort-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+
+.asp-session-list { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── Session card ─────────────────────────────────────────────────────────── */
+.card { background: #ffffff; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.07); transition: box-shadow 0.4s ease, transform 0.4s ease; }
+
+.asp-session-card {
+  padding: 18px 20px; cursor: pointer; position: relative; overflow: hidden;
+  border: 2px solid transparent;
+  opacity: 0; transform: translateX(-20px);
+  animation: aspFadeRight 0.4s ease forwards;
+  transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275) !important;
+}
+.asp-session-card:hover { transform: translateY(-4px) !important; box-shadow: 0 16px 40px rgba(0,0,0,0.12) !important; }
+.asp-session-card--selected { border-color: #3b82f6 !important; box-shadow: 0 0 0 4px rgba(59,130,246,0.1), 0 10px 30px rgba(0,0,0,0.07) !important; }
+.asp-session-card--active { border-color: #10b981 !important; }
+
+.asp-active-pulse {
+  position: absolute; top: 14px; right: 14px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16,185,129,0.4);
+  animation: aspPulse 1.8s infinite;
+}
+
+.asp-session-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.asp-session-number { display: flex; flex-direction: column; }
+.asp-session-num-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+.asp-session-num-value { font-size: 18px; font-weight: 800; color: #0f172a; line-height: 1; }
+
+.asp-status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.asp-status-badge--lg { font-size: 12px; padding: 7px 16px; }
+.asp-status-dot { width: 7px; height: 7px; border-radius: 50%; animation: aspPulse 1.8s infinite; }
+
+.asp-session-card-meta { display: flex; gap: 14px; margin-bottom: 14px; }
+.asp-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #64748b; }
+
+.asp-session-card-footer { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.asp-session-score { display: flex; align-items: center; gap: 10px; }
+.asp-score-label { display: block; font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; }
+.asp-score-val   { display: block; font-size: 14px; font-weight: 700; color: #0f172a; }
+.asp-session-viols { text-align: center; }
+.asp-viol-count-big  { display: block; font-size: 22px; font-weight: 800; line-height: 1; }
+.asp-viol-count-label { display: block; font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-top: 2px; }
+
+.asp-viol-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.asp-viol-chip { padding: 3px 9px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; font-size: 11px; font-weight: 600; color: #ef4444; }
+.asp-viol-more { padding: 3px 9px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11px; font-weight: 600; color: #64748b; }
+.asp-no-viol   { font-size: 12px; color: #10b981; font-weight: 600; }
+
+.asp-session-card-hover-indicator { position: absolute; left: 0; top: 0; width: 3px; height: 100%; opacity: 0; transition: opacity .3s; }
+.asp-session-card:hover .asp-session-card-hover-indicator,
+.asp-session-card--selected .asp-session-card-hover-indicator { opacity: 1; }
+
+/* ── Right col — detail panel ─────────────────────────────────────────────── */
+.asp-right-col { position: sticky; top: 90px; }
+
+.asp-detail-panel { padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+
+.asp-detail-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.asp-detail-id { display: flex; align-items: center; gap: 14px; }
+.asp-detail-id-icon { width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg,#3b82f6,#8b5cf6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(59,130,246,0.3); }
+.asp-detail-title { margin: 0; font-size: 20px; font-weight: 700; color: #0f172a; }
+.asp-detail-sub   { font-size: 13px; color: #64748b; margin-top: 3px; display: block; }
+
+/* ── Timeline bar ─────────────────────────────────────────────────────────── */
+.asp-timeline-bar {
+  display: flex; align-items: flex-start; gap: 0;
+  background: #f8fafc; border-radius: 14px; padding: 20px 24px;
+  border: 1px solid #e2e8f0;
+}
+.asp-timeline-point { display: flex; flex-direction: column; align-items: center; min-width: 80px; }
+.asp-timeline-point--end { align-items: flex-end; }
+.asp-tpoint-dot { width: 14px; height: 14px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.2); margin-bottom: 8px; }
+.asp-tpoint-start { background: #3b82f6; }
+.asp-tpoint-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+.asp-tpoint-time  { font-size: 13px; font-weight: 700; color: #0f172a; margin-top: 3px; }
+.asp-tpoint-date  { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+
+.asp-timeline-line {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding-top: 6px; gap: 6px;
+}
+.asp-timeline-fill { height: 3px; width: 100%; border-radius: 4px; }
+.asp-timeline-dur { font-size: 12px; font-weight: 600; color: #64748b; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 3px 10px; }
+
+/* ── Detail stat grid ─────────────────────────────────────────────────────── */
+.asp-detail-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.asp-detail-stat { background: #f8fafc; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
+.asp-detail-stat-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; }
+.asp-detail-stat-val { font-size: 17px; font-weight: 800; color: #0f172a; }
+.asp-detail-stat-val--sm { font-size: 13px; font-weight: 600; line-height: 1.4; }
+.asp-result-badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; width: fit-content; }
+.asp-result-badge.pass { background: rgba(16,185,129,0.12); color: #10b981; }
+.asp-result-badge.fail { background: rgba(239,68,68,0.1);  color: #ef4444; }
+
+/* ── Violation breakdown in detail ────────────────────────────────────────── */
+.asp-detail-viols { background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.15); border-radius: 14px; padding: 18px 20px; }
+.asp-detail-viols-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #ef4444; margin-bottom: 14px; }
+.asp-detail-viol-list { display: flex; flex-direction: column; gap: 8px; }
+.asp-detail-viol-row { display: flex; align-items: center; gap: 10px; }
+.asp-detail-viol-type { min-width: 150px; font-size: 12px; font-weight: 600; color: #0f172a; }
+.asp-detail-viol-bar-track { flex: 1; height: 6px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+.asp-detail-viol-bar-fill { height: 100%; background: linear-gradient(90deg,#ef4444,#f59e0b); border-radius: 6px; transition: width .8s cubic-bezier(0.175,0.885,0.32,1.275); }
+.asp-detail-viol-count { font-size: 13px; font-weight: 800; color: #ef4444; min-width: 24px; text-align: right; }
+
+/* ── Detail actions ───────────────────────────────────────────────────────── */
+.asp-detail-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.asp-detail-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .25s; border: none;
+}
+.asp-detail-btn--violations {
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #ef4444;
+}
+.asp-detail-btn--violations:hover { background: rgba(239,68,68,0.18); transform: translateY(-2px); }
+.asp-detail-btn--terminate {
+  background: rgba(239,68,68,0.9); color: #fff;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+}
+.asp-detail-btn--terminate:hover { background: #ef4444; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(239,68,68,0.4); }
+
+/* ── Select prompt ────────────────────────────────────────────────────────── */
+.asp-select-prompt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 60px 28px; text-align: center; }
+.asp-select-prompt h3 { margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; }
+.asp-select-prompt p  { margin: 0; font-size: 14px; color: #64748b; line-height: 1.6; max-width: 260px; }
+
+/* ── Empty ────────────────────────────────────────────────────────────────── */
+.asp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 48px 0; color: #94a3b8; font-size: 15px; }
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes aspFadeDown  { from{opacity:0;transform:translateY(-24px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes aspSlideUp   { from{opacity:0;transform:translateY(28px)}   to{opacity:1;transform:translateY(0)} }
+@keyframes aspFadeRight { from{opacity:0;transform:translateX(-18px)}  to{opacity:1;transform:translateX(0)} }
+@keyframes aspExpand    { from{width:0}                                 to{width:80px} }
+@keyframes aspSpin      { to{transform:rotate(360deg)} }
+@keyframes aspPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media(max-width:1200px){ .asp-split{grid-template-columns:320px 1fr} }
+@media(max-width:968px){
+  .asp-split{grid-template-columns:1fr; display:flex; flex-direction:column}
+  .asp-right-col{position:relative;top:auto}
+  .asp-stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+  .asp-page{padding:70px 16px 40px}
+  .page-title{font-size:28px}
+  .asp-back-btn{position:relative;left:auto;margin-bottom:16px}
+  .page-header{text-align:left}
+  .asp-profile-strip{flex-wrap:wrap}
+  .asp-profile-actions{width:100%}
+  .asp-detail-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .asp-stats-grid{grid-template-columns:1fr 1fr;gap:12px}
+  .asp-stat-card{padding:16px 12px}
+  .asp-stat-value{font-size:22px}
+}

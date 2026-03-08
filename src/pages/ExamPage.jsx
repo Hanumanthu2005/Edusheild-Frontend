@@ -8,7 +8,7 @@ const FRAME_INTERVAL_MS = 3000;
 
 // ── Termination thresholds ────────────────────────────────────────────────────
 const TERM_THRESHOLDS = {
-  phone_detected:  1,   // IMMEDIATE — first detection terminates
+  phone_detected:  1,
   book_detected:   3,
   multiple_faces:  2,
   looking_away:    5,
@@ -19,23 +19,522 @@ const TERM_THRESHOLDS = {
 };
 
 const VIOLATION_META = {
-  phone_detected:  { label: "Phone Detected",           severity: "critical" },
-  book_detected:   { label: "Unauthorized Material",    severity: "major"    },
+  phone_detected:  { label: "Phone Detected",            severity: "critical" },
+  book_detected:   { label: "Unauthorized Material",     severity: "major"    },
   multiple_faces:  { label: "Multiple Persons Detected", severity: "critical" },
-  looking_away:    { label: "Looking Away from Screen", severity: "major"    },
-  no_face:         { label: "No Face Detected",         severity: "major"    },
-  tab_switch:      { label: "Tab Switch Detected",      severity: "critical" },
-  fullscreen_exit: { label: "Fullscreen Exited",        severity: "major"    },
-  loud_noise:      { label: "Loud Noise Detected",      severity: "minor"    },
+  looking_away:    { label: "Looking Away from Screen",  severity: "major"    },
+  no_face:         { label: "No Face Detected",          severity: "major"    },
+  tab_switch:      { label: "Tab Switch Detected",       severity: "critical" },
+  fullscreen_exit: { label: "Fullscreen Exited",         severity: "major"    },
+  loud_noise:      { label: "Loud Noise Detected",       severity: "minor"    },
 };
 
-// These show a "this will terminate your exam" message and terminate on dismiss
-const TERMINAL_ON_DISMISS  = ["phone_detected", "multiple_faces"];
-// These terminate immediately without waiting for dismiss
-const INSTANT_TERMINATE    = ["phone_detected"];
+const TERMINAL_ON_DISMISS = ["phone_detected", "multiple_faces"];
+const INSTANT_TERMINATE   = ["phone_detected"];
 
 function getLabel(type)    { return VIOLATION_META[type]?.label    ?? type.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase()); }
 function getSeverity(type) { return VIOLATION_META[type]?.severity ?? "minor"; }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 🔒 PRE-EXAM FACE VERIFICATION MODAL
+// ══════════════════════════════════════════════════════════════════════════════
+function FaceVerificationModal({ onVerified, onCancel }) {
+  const videoRef        = useRef(null);
+  const streamRef       = useRef(null);
+  const attemptsRef     = useRef(0);           // ← ref so captureAndVerify always reads current value
+  const [phase, setPhase]         = useState("intro");
+  const [errorMsg, setErrorMsg]   = useState("");
+  const [attempts, setAttempts]   = useState(0);  // drives UI only
+  const [countdown, setCountdown] = useState(3);
+  const [camReady, setCamReady]   = useState(false); // ← track when video is actually playing
+  const MAX_ATTEMPTS = 3;
+  const token = localStorage.getItem("token") || "";
+
+  // ── Start webcam ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    let mounted = true;
+    navigator.mediaDevices
+      .getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+        audio: false,
+      })
+      .then(stream => {
+        if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          // play() returns a promise; wait for it before marking ready
+          videoRef.current.play().catch(() => {});
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setPhase("failed");
+          setErrorMsg("Camera access denied. Please allow camera permissions and try again.");
+        }
+      });
+    return () => {
+      mounted = false;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  // ── Mark camera as ready once video starts playing ────────────────────────
+  // BUG FIX 1: readyState is checked too early (race condition).
+  // We now track an explicit `camReady` flag via the onCanPlay event instead
+  // of checking readyState at capture time.
+  const handleCanPlay = () => setCamReady(true);
+
+  // ── Countdown → capture trigger ───────────────────────────────────────────
+  // BUG FIX 2: countdown reaching 0 called captureAndVerify() while it was
+  // still a stale closure. We now use a ref-based trigger to avoid closure issues.
+  const shouldCaptureRef = useRef(false);
+
+  useEffect(() => {
+    if (phase !== "scanning") return;
+    if (countdown <= 0) {
+      shouldCaptureRef.current = true;
+      captureAndVerify();
+      return;
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
+
+  const startScan = () => {
+    setCountdown(3);
+    setErrorMsg("");
+    shouldCaptureRef.current = false;
+    setPhase("scanning");
+  };
+
+  // ── Wait for video to be ready, then draw one frame ───────────────────────
+  const waitForFrame = (video) =>
+    new Promise((resolve, reject) => {
+      // Already has data — resolve immediately
+      if (video.readyState >= 2 && video.videoWidth > 0) { resolve(); return; }
+      const onReady = () => { video.removeEventListener("canplay", onReady); resolve(); };
+      video.addEventListener("canplay", onReady);
+      // Timeout safety — don't hang forever
+      setTimeout(() => { video.removeEventListener("canplay", onReady); reject(new Error("timeout")); }, 5000);
+    });
+
+  const captureAndVerify = async () => {
+    setPhase("verifying");
+
+    const video = videoRef.current;
+
+    // BUG FIX 1 (continued): wait for the video to genuinely have frame data
+    // before drawing to canvas, instead of bailing immediately.
+    try {
+      await waitForFrame(video);
+    } catch {
+      setErrorMsg("Camera timed out. Please check your camera and try again.");
+      attemptsRef.current += 1;
+      setAttempts(attemptsRef.current);
+      setPhase(attemptsRef.current >= MAX_ATTEMPTS ? "blocked" : "failed");
+      return;
+    }
+
+    // BUG FIX 3: The canvas was applying ctx.scale(-1,1) to "mirror" the frame,
+    // but the backend's registered photo was taken WITHOUT mirroring (by
+    // /api/register, which also receives a mirrored canvas snapshot).
+    // Both snapshots must be oriented the same way for ArcFace to match them.
+    //
+    // The <video> CSS transform: scaleX(-1) is purely visual — drawImage()
+    // always captures the RAW (un-flipped) camera frame regardless.
+    //
+    // At registration the snapshot sent is the MIRRORED canvas (front camera
+    // appears mirrored to user, canvas flip corrects it → natural orientation).
+    // Here we must send the SAME orientation: flip once so left↔right match.
+    // Removing the double-flip means we just draw the raw frame = no flip needed
+    // because the backend registration photo was stored WITHOUT the flip.
+    //
+    // RULE: match whatever /api/register sends. Register sends raw (unflipped)
+    // canvas from a mirrored <video> — which equals the NATURAL camera frame.
+    // So here: draw without any transform.
+    const canvas = document.createElement("canvas");
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+
+    // Draw the raw camera frame — no flip. This matches the registration
+    // baseline which was also captured as a raw (un-flipped) frame.
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const snapshot = canvas.toDataURL("image/jpeg", 0.92);
+
+    // BUG FIX 4: `attempts` state was stale inside this async function because
+    // React state updates are batched. We use `attemptsRef` for accurate count.
+    try {
+      const res = await fetch(`${API_BASE}/api/verify_face`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ live_snapshot_base64: snapshot }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.verified) {
+        setPhase("success");
+        setTimeout(() => {
+          streamRef.current?.getTracks().forEach(t => t.stop());
+          onVerified();
+        }, 1500);
+      } else {
+        attemptsRef.current += 1;
+        setAttempts(attemptsRef.current);
+        setErrorMsg(data.message || "Face verification failed. Please try again.");
+        setPhase(attemptsRef.current >= MAX_ATTEMPTS ? "blocked" : "failed");
+      }
+    } catch (err) {
+      attemptsRef.current += 1;
+      setAttempts(attemptsRef.current);
+      setErrorMsg("Verification request failed. Check your connection and try again.");
+      setPhase(attemptsRef.current >= MAX_ATTEMPTS ? "blocked" : "failed");
+    }
+  };
+
+  const retry = () => {
+    if (attemptsRef.current >= MAX_ATTEMPTS) return;
+    setErrorMsg("");
+    setPhase("intro");
+  };
+
+  return (
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
+
+        {/* Header */}
+        <div style={styles.modalHeader}>
+          <div style={styles.shieldIcon}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 style={styles.modalTitle}>Identity Verification Required</h2>
+            <p style={styles.modalSubtitle}>Confirm your identity before starting the exam</p>
+          </div>
+        </div>
+
+        {/* Camera feed */}
+        <div style={styles.cameraWrap}>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            onCanPlay={handleCanPlay}
+            style={{
+              ...styles.cameraVideo,
+              transform: "scaleX(-1)",   /* visual mirror only — does NOT affect drawImage() */
+              opacity: (phase === "verifying" || phase === "success" || phase === "blocked") ? 0.5 : 1,
+            }}
+          />
+
+          {/* Camera warming up indicator */}
+          {!camReady && phase === "intro" && (
+            <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)",
+              background:"rgba(0,0,0,0.6)", color:"#94a3b8", fontSize:11, padding:"3px 10px",
+              borderRadius:20, whiteSpace:"nowrap" }}>
+              Camera warming up…
+            </div>
+          )}
+
+          {/* Overlay: scanning frame */}
+          <div style={styles.scanFrame}>
+            <div style={{ ...styles.scanCorner, top: 0, left: 0,   borderTop: "3px solid", borderLeft: "3px solid",  borderColor: phase === "success" ? "#22c55e" : phase === "failed" || phase === "blocked" ? "#ef4444" : "#60a5fa" }} />
+            <div style={{ ...styles.scanCorner, top: 0, right: 0,  borderTop: "3px solid", borderRight: "3px solid", borderColor: phase === "success" ? "#22c55e" : phase === "failed" || phase === "blocked" ? "#ef4444" : "#60a5fa" }} />
+            <div style={{ ...styles.scanCorner, bottom: 0, left: 0,  borderBottom: "3px solid", borderLeft: "3px solid",  borderColor: phase === "success" ? "#22c55e" : phase === "failed" || phase === "blocked" ? "#ef4444" : "#60a5fa" }} />
+            <div style={{ ...styles.scanCorner, bottom: 0, right: 0, borderBottom: "3px solid", borderRight: "3px solid", borderColor: phase === "success" ? "#22c55e" : phase === "failed" || phase === "blocked" ? "#ef4444" : "#60a5fa" }} />
+          </div>
+
+          {/* Scan animation line */}
+          {phase === "scanning" && (
+            <div style={styles.scanLine} />
+          )}
+
+          {/* Countdown badge */}
+          {phase === "scanning" && countdown > 0 && (
+            <div style={styles.countdownBadge}>{countdown}</div>
+          )}
+
+          {/* Verifying spinner */}
+          {phase === "verifying" && (
+            <div style={styles.phaseOverlay}>
+              <div style={styles.spinner} />
+              <span style={styles.phaseText}>Verifying identity…</span>
+            </div>
+          )}
+
+          {/* Success */}
+          {phase === "success" && (
+            <div style={{ ...styles.phaseOverlay, background: "rgba(16,185,129,0.85)" }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span style={styles.phaseText}>Identity Confirmed!</span>
+            </div>
+          )}
+
+          {/* Blocked */}
+          {phase === "blocked" && (
+            <div style={{ ...styles.phaseOverlay, background: "rgba(220,38,38,0.9)" }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+              <span style={styles.phaseText}>Access Denied</span>
+            </div>
+          )}
+        </div>
+
+        {/* Attempt indicators */}
+        {attempts > 0 && phase !== "success" && (
+          <div style={styles.attemptsWrap}>
+            <span style={styles.attemptsLabel}>Attempts:</span>
+            {Array.from({ length: MAX_ATTEMPTS }).map((_, i) => (
+              <div key={i} style={{
+                ...styles.attemptDot,
+                background: i < attempts ? "#ef4444" : "rgba(255,255,255,0.15)",
+                border: `1px solid ${i < attempts ? "#ef4444" : "rgba(255,255,255,0.25)"}`,
+              }} />
+            ))}
+            <span style={styles.attemptsRemaining}>
+              {MAX_ATTEMPTS - attempts} attempt{MAX_ATTEMPTS - attempts !== 1 ? "s" : ""} remaining
+            </span>
+          </div>
+        )}
+
+        {/* Error message */}
+        {errorMsg && phase !== "blocked" && (
+          <div style={styles.errorBox}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Blocked message */}
+        {phase === "blocked" && (
+          <div style={{ ...styles.errorBox, background: "rgba(220,38,38,0.15)", borderColor: "#ef4444" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>Maximum verification attempts reached. You cannot access this exam. Please contact your examiner.</span>
+          </div>
+        )}
+
+        {/* Instructions (intro only) */}
+        {phase === "intro" && (
+          <ul style={styles.tipsList}>
+            <li style={styles.tipItem}>
+              <span style={styles.tipDot}>•</span>
+              Ensure your face is <strong>clearly visible</strong> and well-lit
+            </li>
+            <li style={styles.tipItem}>
+              <span style={styles.tipDot}>•</span>
+              Look <strong>directly at the camera</strong> and stay still
+            </li>
+            <li style={styles.tipItem}>
+              <span style={styles.tipDot}>•</span>
+              Remove hats, glasses, or anything obscuring your face
+            </li>
+          </ul>
+        )}
+
+        {/* Action buttons */}
+        <div style={styles.actions}>
+          {(phase === "intro") && (
+            <>
+              <button style={styles.btnSecondary} onClick={onCancel}>Cancel</button>
+              <button
+                style={{ ...styles.btnPrimary, opacity: camReady ? 1 : 0.5, cursor: camReady ? "pointer" : "not-allowed" }}
+                onClick={startScan}
+                disabled={!camReady}
+                title={!camReady ? "Camera is warming up, please wait…" : undefined}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                </svg>
+                {camReady ? "Begin Verification" : "Camera warming up…"}
+              </button>
+            </>
+          )}
+          {phase === "failed" && attempts < MAX_ATTEMPTS && (
+            <>
+              <button style={styles.btnSecondary} onClick={onCancel}>Cancel</button>
+              <button style={styles.btnPrimary} onClick={retry}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="1 4 1 10 7 10"/>
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.75"/>
+                </svg>
+                Try Again
+              </button>
+            </>
+          )}
+          {phase === "blocked" && (
+            <button style={{ ...styles.btnSecondary, flex: 1 }} onClick={onCancel}>Return to Dashboard</button>
+          )}
+          {(phase === "scanning" || phase === "verifying") && (
+            <button style={{ ...styles.btnSecondary, flex: 1, opacity: 0.5, cursor: "not-allowed" }} disabled>
+              {phase === "scanning" ? `Capturing in ${countdown}s…` : "Verifying…"}
+            </button>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// Inline styles for the modal (self-contained, no CSS file dependency)
+const styles = {
+  overlay: {
+    position: "fixed", inset: 0, zIndex: 9999,
+    background: "rgba(0,0,0,0.85)",
+    backdropFilter: "blur(8px)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    padding: "1rem",
+  },
+  modal: {
+    background: "linear-gradient(145deg, #0f172a 0%, #1e293b 100%)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "20px",
+    padding: "2rem",
+    width: "100%",
+    maxWidth: "500px",
+    boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "1.25rem",
+  },
+  modalHeader: {
+    display: "flex", alignItems: "center", gap: "1rem",
+  },
+  shieldIcon: {
+    width: 52, height: 52, borderRadius: "14px",
+    background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    flexShrink: 0,
+    boxShadow: "0 4px 20px rgba(59,130,246,0.4)",
+  },
+  modalTitle: {
+    margin: 0, fontSize: "1.2rem", fontWeight: 700,
+    color: "#f1f5f9", lineHeight: 1.2,
+  },
+  modalSubtitle: {
+    margin: "0.2rem 0 0", fontSize: "0.85rem",
+    color: "#94a3b8",
+  },
+  cameraWrap: {
+    position: "relative", width: "100%", aspectRatio: "16/9",
+    borderRadius: "12px", overflow: "hidden",
+    background: "#0a0f1a",
+    border: "1px solid rgba(255,255,255,0.08)",
+  },
+  cameraVideo: {
+    width: "100%", height: "100%",
+    objectFit: "cover", display: "block",
+  },
+  scanFrame: {
+    position: "absolute", inset: "10%",
+    pointerEvents: "none",
+  },
+  scanCorner: {
+    position: "absolute", width: 24, height: 24,
+    transition: "border-color 0.3s",
+  },
+  scanLine: {
+    position: "absolute", left: "10%", right: "10%", height: "2px",
+    background: "linear-gradient(90deg, transparent, #60a5fa, transparent)",
+    animation: "scanMove 1.8s ease-in-out infinite",
+    top: "10%",
+    // NOTE: add @keyframes scanMove to ExamPage.css:
+    // @keyframes scanMove { 0%,100%{top:10%} 50%{top:85%} }
+  },
+  countdownBadge: {
+    position: "absolute", top: "50%", left: "50%",
+    transform: "translate(-50%,-50%)",
+    fontSize: "5rem", fontWeight: 900,
+    color: "rgba(96,165,250,0.9)",
+    textShadow: "0 0 30px rgba(96,165,250,0.6)",
+    lineHeight: 1, pointerEvents: "none",
+    animation: "countPulse 1s ease-in-out",
+  },
+  phaseOverlay: {
+    position: "absolute", inset: 0,
+    display: "flex", flexDirection: "column",
+    alignItems: "center", justifyContent: "center", gap: "0.75rem",
+    background: "rgba(15,23,42,0.75)",
+    backdropFilter: "blur(4px)",
+  },
+  phaseText: {
+    color: "#fff", fontSize: "1.05rem", fontWeight: 600,
+    textAlign: "center",
+  },
+  spinner: {
+    width: 44, height: 44, borderRadius: "50%",
+    border: "3px solid rgba(255,255,255,0.15)",
+    borderTopColor: "#60a5fa",
+    animation: "spin 0.8s linear infinite",
+  },
+  attemptsWrap: {
+    display: "flex", alignItems: "center", gap: "0.5rem",
+  },
+  attemptsLabel: { color: "#64748b", fontSize: "0.8rem" },
+  attemptDot: {
+    width: 10, height: 10, borderRadius: "50%",
+    transition: "background 0.3s",
+  },
+  attemptsRemaining: { color: "#94a3b8", fontSize: "0.8rem", marginLeft: "0.25rem" },
+  errorBox: {
+    display: "flex", alignItems: "flex-start", gap: "0.6rem",
+    background: "rgba(239,68,68,0.1)",
+    border: "1px solid rgba(239,68,68,0.3)",
+    borderRadius: "10px", padding: "0.75rem 1rem",
+    color: "#fca5a5", fontSize: "0.875rem", lineHeight: 1.5,
+  },
+  tipsList: {
+    margin: 0, padding: 0, listStyle: "none",
+    display: "flex", flexDirection: "column", gap: "0.5rem",
+  },
+  tipItem: {
+    display: "flex", alignItems: "flex-start", gap: "0.5rem",
+    color: "#94a3b8", fontSize: "0.875rem", lineHeight: 1.5,
+  },
+  tipDot: { color: "#3b82f6", fontWeight: 700, marginTop: "0.1rem" },
+  actions: {
+    display: "flex", gap: "0.75rem",
+  },
+  btnPrimary: {
+    flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+    gap: "0.5rem", padding: "0.75rem 1.25rem",
+    background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+    color: "#fff", border: "none", borderRadius: "10px",
+    fontSize: "0.95rem", fontWeight: 600, cursor: "pointer",
+    boxShadow: "0 4px 15px rgba(59,130,246,0.35)",
+    transition: "opacity 0.2s",
+  },
+  btnSecondary: {
+    flex: 1, padding: "0.75rem 1.25rem",
+    background: "rgba(255,255,255,0.06)",
+    color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "10px", fontSize: "0.95rem", fontWeight: 500,
+    cursor: "pointer", transition: "background 0.2s",
+  },
+};
 
 // ── Violation icon ────────────────────────────────────────────────────────────
 function ViolationIcon({ type, size = 18 }) {
@@ -155,16 +654,11 @@ function TerminationModal({ reason, onRedirect }) {
 }
 
 // ── Backend MJPEG Camera Preview ──────────────────────────────────────────────
-// Replaces the plain <video> element with the annotated backend stream.
-// The backend draws bounding boxes, face mesh, and violation banners directly
-// onto each frame, so the student sees the same annotated view.
 function CameraPreview({ token, streamError, onStreamError }) {
   const [imgSrc, setImgSrc] = useState(null);
 
   useEffect(() => {
     if (!token) return;
-    // Build the MJPEG stream URL with the JWT in the query string
-    // (browser <img> tags cannot set Authorization headers)
     const url = `${API_BASE}/api/video_feed?token=${encodeURIComponent(token)}`;
     setImgSrc(url);
   }, [token]);
@@ -192,7 +686,6 @@ function CameraPreview({ token, streamError, onStreamError }) {
           </div>
         ) : imgSrc ? (
           <>
-            {/* MJPEG stream from backend — fully annotated with bounding boxes */}
             <img
               src={imgSrc}
               alt="Proctoring feed"
@@ -225,6 +718,9 @@ function ExamPage() {
   const navigate   = useNavigate();
   const { examId } = useParams();
 
+  // ── NEW: gate state — "verifying" | "verified" | "cancelled"
+  const [verificationState, setVerificationState] = useState("verifying");
+
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers]  = useState({});
   const [animate,         setAnimate]          = useState(false);
@@ -237,11 +733,8 @@ function ExamPage() {
   const [isSubmitting,    setIsSubmitting]     = useState(false);
   const [streamError,     setStreamError]      = useState(false);
 
-  // Token for MJPEG stream URL
   const token = localStorage.getItem("token") || "";
 
-  // We still keep a hidden canvas + video for sending frames to /api/analyze_frame
-  // (for audio detection and any supplemental analysis)
   const videoRef  = useRef(null);
   const streamRef = useRef(null);
 
@@ -256,7 +749,8 @@ function ExamPage() {
   const fsViolations    = useRef(0);
   const terminatedRef   = useRef(false);
 
-  // ── Init ──────────────────────────────────────────────────────────────────
+  // ── Load exam data as soon as the page mounts (before verification) ────────
+  // This way the exam is ready to go the moment verification passes.
   useEffect(() => {
     setAnimate(true);
     initializeExam();
@@ -265,12 +759,11 @@ function ExamPage() {
   const initializeExam = async () => {
     try {
       setLoading(true);
-      const examDetails   = await getExamDetails(examId);
+      const examDetails = await getExamDetails(examId);
       setExamData(examDetails);
       setQuestions(examDetails.questions || []);
       setTimeRemaining(examDetails.duration * 60);
-      const startResponse = await startExam(examId);
-      setUserExamId(startResponse.user_exam_id);
+      // NOTE: startExam() is called AFTER verification passes (see handleVerified)
     } catch {
       setError("Failed to load exam. Please try again.");
     } finally {
@@ -278,11 +771,26 @@ function ExamPage() {
     }
   };
 
-  // ── Hidden webcam for audio detection (backend stream handles video) ───────
-  // We still open a local stream so the browser audio monitor can work,
-  // but we DON'T display this video — the backend MJPEG stream is shown instead.
+  // ── Called when face verification succeeds ─────────────────────────────────
+  const handleVerified = useCallback(async () => {
+    setVerificationState("verified");
+    try {
+      const startResponse = await startExam(examId);
+      setUserExamId(startResponse.user_exam_id);
+    } catch {
+      setError("Failed to start exam after verification. Please try again.");
+    }
+  }, [examId]);
+
+  // ── Called when student cancels verification ───────────────────────────────
+  const handleVerificationCancelled = useCallback(() => {
+    navigate("/exams");
+  }, [navigate]);
+
+  // ── Hidden webcam for audio detection ─────────────────────────────────────
   useEffect(() => {
-    if (loading) return;
+    // Only open the proctoring stream after verification is done
+    if (loading || verificationState !== "verified") return;
     let mounted = true;
     navigator.mediaDevices
       .getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
@@ -296,7 +804,7 @@ function ExamPage() {
       mounted = false;
       streamRef.current?.getTracks().forEach(t => t.stop());
     };
-  }, [loading]);
+  }, [loading, verificationState]);
 
   // ── Popup queue ───────────────────────────────────────────────────────────
   const shiftQueue = useCallback(() => {
@@ -342,11 +850,9 @@ function ExamPage() {
     }
   }, [shiftQueue, triggerTermination]);
 
-  // ── Frame capture — still used for supplemental analysis (audio, etc.) ────
-  // NOTE: The backend MJPEG stream now handles the primary vision analysis.
-  // This path is kept for audio violation detection which is backend-only.
+  // ── Frame capture ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (loading) return;
+    if (loading || verificationState !== "verified") return;
 
     const captureAndSend = async () => {
       if (terminatedRef.current) return;
@@ -375,108 +881,81 @@ function ExamPage() {
           if (!res.ok) return;
           const data = await res.json();
 
-          // ── INSTANT TERMINATION: phone detected ───────────────────────────
-          // Backend sets instant_terminate=true for phone_detected.
-          // We terminate immediately without waiting for popup dismiss.
           if (data.instant_terminate) {
             enqueuePopup(data.terminate_reason);
-            // Brief delay so popup renders before we terminate
             setTimeout(() => {
-              if (!terminatedRef.current) {
-                triggerTermination(data.terminate_reason);
-              }
+              if (!terminatedRef.current) triggerTermination(data.terminate_reason);
             }, 1500);
             return;
           }
 
           if (Array.isArray(data.violations)) {
             data.violations.forEach(vType => {
-              setViolationCounts(prev => ({
-                ...prev,
-                [vType]: (prev[vType] ?? 0) + 1,
-              }));
-
-              // Instant terminate types get special handling even if backend
-              // didn't flag instant_terminate (e.g. race condition)
+              setViolationCounts(prev => ({ ...prev, [vType]: (prev[vType] ?? 0) + 1 }));
               if (INSTANT_TERMINATE.includes(vType) && !terminatedRef.current) {
                 enqueuePopup(vType);
-                setTimeout(() => {
-                  if (!terminatedRef.current) triggerTermination(vType);
-                }, 1500);
+                setTimeout(() => { if (!terminatedRef.current) triggerTermination(vType); }, 1500);
               } else {
                 enqueuePopup(vType);
               }
             });
           }
-
         } catch (_) {}
       }, "image/jpeg", 0.85);
     };
 
     const interval = setInterval(captureAndSend, FRAME_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [loading, enqueuePopup, triggerTermination, token]);
+  }, [loading, verificationState, enqueuePopup, triggerTermination, token]);
 
   // ── Tab-switch ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (loading) return;
+    if (loading || verificationState !== "verified") return;
     const handle = async () => {
       if (!document.hidden || terminatedRef.current) return;
       tabViolations.current += 1;
       const count = tabViolations.current;
       setViolationCounts(prev => ({ ...prev, tab_switch: count }));
-
       fetch(`${API_BASE}/api/log_violation`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type: "tab_switch" }),
       }).catch(() => {});
-
       enqueuePopup("tab_switch");
-
       if (count >= TERM_THRESHOLDS.tab_switch) {
-        setTimeout(() => {
-          if (!terminatedRef.current) triggerTermination("tab_switch");
-        }, 6000);
+        setTimeout(() => { if (!terminatedRef.current) triggerTermination("tab_switch"); }, 6000);
       }
     };
     document.addEventListener("visibilitychange", handle);
     return () => document.removeEventListener("visibilitychange", handle);
-  }, [loading, enqueuePopup, triggerTermination, token]);
+  }, [loading, verificationState, enqueuePopup, triggerTermination, token]);
 
   // ── Fullscreen ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (loading) return;
+    if (loading || verificationState !== "verified") return;
     document.documentElement.requestFullscreen?.().catch(() => {});
-
     const handle = async () => {
       if (document.fullscreenElement || terminatedRef.current) return;
       fsViolations.current += 1;
       const count = fsViolations.current;
       setViolationCounts(prev => ({ ...prev, fullscreen_exit: count }));
-
       fetch(`${API_BASE}/api/log_violation`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type: "fullscreen_exit" }),
       }).catch(() => {});
-
       enqueuePopup("fullscreen_exit");
-
       if (count >= TERM_THRESHOLDS.fullscreen_exit) {
-        setTimeout(() => {
-          if (!terminatedRef.current) triggerTermination("fullscreen_exit");
-        }, 6000);
+        setTimeout(() => { if (!terminatedRef.current) triggerTermination("fullscreen_exit"); }, 6000);
       }
     };
     document.addEventListener("fullscreenchange", handle);
     return () => document.removeEventListener("fullscreenchange", handle);
-  }, [loading, enqueuePopup, triggerTermination, token]);
+  }, [loading, verificationState, enqueuePopup, triggerTermination, token]);
 
-  // ── Backend poll — catch audio violations + admin termination ─────────────
+  // ── Backend poll ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (loading) return;
-
+    if (loading || verificationState !== "verified") return;
     const poll = setInterval(async () => {
       if (terminatedRef.current) { clearInterval(poll); return; }
       try {
@@ -485,7 +964,6 @@ function ExamPage() {
         });
         if (!res.ok) return;
         const data = await res.json();
-
         if (data.counts) {
           setViolationCounts(prev => {
             const merged = { ...prev };
@@ -495,33 +973,23 @@ function ExamPage() {
             return merged;
           });
         }
-
-        if (data.terminated) {
-          triggerTermination(data.reason || "proctoring_violation");
-          return;
-        }
-
-        // Audio and any backend-only violations
+        if (data.terminated) { triggerTermination(data.reason || "proctoring_violation"); return; }
         data.violations?.forEach(v => {
           if (INSTANT_TERMINATE.includes(v) && !terminatedRef.current) {
             enqueuePopup(v);
-            setTimeout(() => {
-              if (!terminatedRef.current) triggerTermination(v);
-            }, 1500);
+            setTimeout(() => { if (!terminatedRef.current) triggerTermination(v); }, 1500);
           } else {
             enqueuePopup(v);
           }
         });
-
       } catch (_) {}
     }, 5000);
-
     return () => clearInterval(poll);
-  }, [loading, enqueuePopup, triggerTermination, token]);
+  }, [loading, verificationState, enqueuePopup, triggerTermination, token]);
 
   // ── Timer ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (timeRemaining <= 0 || loading || terminated) return;
+    if (timeRemaining <= 0 || loading || terminated || verificationState !== "verified") return;
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) { handleSubmitExam(); return 0; }
@@ -529,7 +997,7 @@ function ExamPage() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [timeRemaining, loading, terminated]);
+  }, [timeRemaining, loading, terminated, verificationState]);
 
   const formatTime = s =>
     `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
@@ -553,6 +1021,20 @@ function ExamPage() {
   const handleRedirectAfterTermination = useCallback(() => navigate("/home"), [navigate]);
   const answeredCount = Object.keys(selectedAnswers).length;
   const progress      = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
+
+  // ── Render: show verification modal first, before anything else ───────────
+  if (verificationState === "verifying") {
+    return (
+      <>
+        {/* Blurred exam preview behind the modal */}
+        <div style={{ filter: "blur(8px)", pointerEvents: "none", userSelect: "none", minHeight: "100vh", background: "#0f172a" }} />
+        <FaceVerificationModal
+          onVerified={handleVerified}
+          onCancel={handleVerificationCancelled}
+        />
+      </>
+    );
+  }
 
   // ── Render guards ─────────────────────────────────────────────────────────
   if (loading) return (
@@ -641,19 +1123,13 @@ function ExamPage() {
       <div className="exam-container">
         <div className="exam-sidebar">
 
-          {/* Backend MJPEG annotated stream */}
           <CameraPreview
             token={token}
             streamError={streamError}
             onStreamError={setStreamError}
           />
 
-          {/* Hidden video + canvas for supplemental frame sending */}
-          <video
-            ref={videoRef}
-            autoPlay playsInline muted
-            style={{ display: "none" }}
-          />
+          <video ref={videoRef} autoPlay playsInline muted style={{ display: "none" }} />
           <canvas id="capture-canvas" style={{ display: "none" }} />
 
           <div className="violation-summary">

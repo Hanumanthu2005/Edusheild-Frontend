@@ -14,6 +14,11 @@ import AdminRoute from "./components/AdminRoute";
 import CreateExam from "./pages/admin/CreateExam";
 import ManageExams from "./pages/admin/ManageExams";
 import AdminLayout from "./pages/admin/AdminLayout";
+import AdminResultsPage from "./pages/admin/AdminResultsPage";
+import AdminSessionPage from "./pages/admin/AdminSessionPage";
+import AdminViolationsPage from "./pages/admin/AdminViolationsPage";
+import ExamHistoryPage from "./pages/ExamhistoryPage";
+import AdminFeedbackPage from "./pages/admin/AdminFeedBackpage";
 
 function App() {
   return (
@@ -29,12 +34,17 @@ function App() {
         <Route path="/exams" element={<ViewExams />} />
         <Route path="/results" element={<Results />} />
         <Route path="/exam/:examId" element={<ExamPage />} />
+        <Route path="/history" element={<ExamHistoryPage />} />
 
         <Route path="/admin" element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="exams" element={<ManageExams />} />
             <Route path="exams/create" element={<CreateExam />} />
+            <Route path="results" element={<AdminResultsPage />} />
+            <Route path="violations" element={<AdminViolationsPage />} />
+            <Route path="sessions" element={<AdminSessionPage />} />
+            <Route path="feedback" element={<AdminFeedbackPage />} />
           </Route>
         </Route>  
       </Routes>

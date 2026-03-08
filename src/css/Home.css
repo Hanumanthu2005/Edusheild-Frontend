@@ -438,3 +438,58 @@
 .logout-btn:hover svg {
   transform: translateX(4px);
 }
+
+/* ── Append these rules to your existing Home.css ─────────────────────────── */
+
+/* ── Stat card skeleton shimmer ──────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.stat-card--skeleton {
+  pointer-events: none;
+}
+
+.stat-skeleton-number,
+.stat-skeleton-label {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.6) 25%,
+    rgba(241, 245, 249, 0.9) 50%,
+    rgba(226, 232, 240, 0.6) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.stat-skeleton-number {
+  width: 56px;
+  height: 32px;
+  margin: 0 auto 10px;
+}
+
+.stat-skeleton-label {
+  width: 72px;
+  height: 14px;
+  margin: 0 auto;
+}
+
+/* ── Stat card error muted style ─────────────────────────────────────────── */
+.stat-card--error .stat-number {
+  color: #cbd5e1;
+}
+
+.stat-card--error .stat-label {
+  color: #cbd5e1;
+}
+
+/* ── Non-blocking error notice ───────────────────────────────────────────── */
+.stats-error-notice {
+  text-align: center;
+  font-size: 13px;
+  color: #f97316;
+  margin: -12px 0 16px;
+  font-weight: 500;
+}

@@ -3,13 +3,76 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import "../css/Home.css";
 
+const API_BASE = "http://localhost:5001";
+
+function authHeaders() {
+  return { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
+}
+
 function Home() {
   const navigate = useNavigate();
   const [animate, setAnimate] = useState(false);
 
+  // ── Stats state ────────────────────────────────────────────────────────────
+  const [stats, setStats]         = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError]   = useState("");
+
   useEffect(() => {
     setAnimate(true);
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      // Fetch both endpoints in parallel
+      const [examsRes, resultsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/student/exams`,   { headers: authHeaders() }),
+        fetch(`${API_BASE}/api/student/results`, { headers: authHeaders() }),
+      ]);
+
+      if (!examsRes.ok || !resultsRes.ok) {
+        throw new Error("Failed to load stats");
+      }
+
+      const [exams, results] = await Promise.all([
+        examsRes.json(),
+        resultsRes.json(),
+      ]);
+
+      // Derive stats
+      const totalExams    = exams.length;
+      const completed     = results.length;
+      const passCount     = results.filter(r => r.status === "Pass").length;
+
+      const avgScore =
+        completed > 0
+          ? Math.round(
+              results.reduce((sum, r) => {
+                const pct = r.total > 0 ? (r.score / r.total) * 100 : 0;
+                return sum + pct;
+              }, 0) / completed
+            )
+          : 0;
+
+      // "Upcoming" = exams the student hasn't completed yet
+      const completedIds = new Set(
+        results.map(r => {
+          // results have examName + code; exams have title + id
+          // Match by code "EXAM001" → id 1
+          const idStr = r.code?.replace("EXAM", "").replace(/^0+/, "");
+          return Number(idStr);
+        })
+      );
+      const upcoming = exams.filter(e => !completedIds.has(e.id)).length;
+
+      setStats({ totalExams, completed, avgScore, upcoming, passCount });
+    } catch (err) {
+      setStatsError(err.message);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -17,10 +80,27 @@ function Home() {
     navigate("/login");
   };
 
+  // Decide what to render in each stat cell
+  const statCells = stats
+    ? [
+        { number: stats.totalExams,            label: "Total Exams" },
+        { number: stats.completed,             label: "Completed" },
+        { number: `${stats.avgScore}%`,        label: "Avg Score" },
+        { number: stats.upcoming,              label: "Upcoming" },
+      ]
+    : [
+        { number: "—", label: "Total Exams" },
+        { number: "—", label: "Completed" },
+        { number: "—", label: "Avg Score" },
+        { number: "—", label: "Upcoming" },
+      ];
+
   return (
     <>
       <Navbar />
       <div className={`home-container ${animate ? "home-enter" : ""}`}>
+
+        {/* ── Header ───────────────────────────────────────────────────────── */}
         <div className="home-header">
           <div className="welcome-badge">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -34,8 +114,9 @@ function Home() {
           <div className="title-decoration"></div>
         </div>
 
+        {/* ── Dashboard cards ───────────────────────────────────────────────── */}
         <div className="dashboard-grid">
-          <div className="dashboard-card slide-up" style={{ animationDelay: '0.1s' }}>
+          <div className="dashboard-card slide-up" style={{ animationDelay: "0.1s" }}>
             <div className="card-icon-wrapper exams">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -48,15 +129,14 @@ function Home() {
               <button className="dashboard-btn exams-btn" onClick={() => navigate("/exams")}>
                 <span>View Exams</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
               </button>
             </div>
             <div className="card-decoration"></div>
           </div>
 
-          <div className="dashboard-card slide-up" style={{ animationDelay: '0.2s' }}>
+          <div className="dashboard-card slide-up" style={{ animationDelay: "0.2s" }}>
             <div className="card-icon-wrapper results">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="20" x2="12" y2="10"/>
@@ -70,15 +150,14 @@ function Home() {
               <button className="dashboard-btn results-btn" onClick={() => navigate("/results")}>
                 <span>View Results</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
               </button>
             </div>
             <div className="card-decoration"></div>
           </div>
 
-          <div className="dashboard-card slide-up" style={{ animationDelay: '0.3s' }}>
+          <div className="dashboard-card slide-up" style={{ animationDelay: "0.3s" }}>
             <div className="card-icon-wrapper history">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/>
@@ -88,18 +167,17 @@ function Home() {
             <div className="card-content">
               <h2>History</h2>
               <p>Review previously attempted exams.</p>
-              <button className="dashboard-btn history-btn">
+              <button className="dashboard-btn history-btn" onClick={() => navigate("/history")}>
                 <span>View History</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
               </button>
             </div>
             <div className="card-decoration"></div>
           </div>
 
-          <div className="dashboard-card slide-up" style={{ animationDelay: '0.4s' }}>
+          <div className="dashboard-card slide-up" style={{ animationDelay: "0.4s" }}>
             <div className="card-icon-wrapper upcoming">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -114,8 +192,7 @@ function Home() {
               <button className="dashboard-btn upcoming-btn">
                 <span>View Schedule</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
               </button>
             </div>
@@ -123,27 +200,42 @@ function Home() {
           </div>
         </div>
 
-        {/* Quick stats section */}
+        {/* ── Quick stats ───────────────────────────────────────────────────── */}
         <div className="stats-section fade-in-delayed">
-          <div className="stat-card">
-            <div className="stat-number">12</div>
-            <div className="stat-label">Total Exams</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">8</div>
-            <div className="stat-label">Completed</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">85%</div>
-            <div className="stat-label">Avg Score</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">3</div>
-            <div className="stat-label">Upcoming</div>
-          </div>
+          {statsLoading ? (
+            /* Skeleton shimmer */
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="stat-card stat-card--skeleton">
+                <div className="stat-skeleton-number" />
+                <div className="stat-skeleton-label" />
+              </div>
+            ))
+          ) : statsError ? (
+            /* Error fallback — still show cells with a dash */
+            statCells.map((s, i) => (
+              <div key={i} className="stat-card stat-card--error">
+                <div className="stat-number">—</div>
+                <div className="stat-label">{s.label}</div>
+              </div>
+            ))
+          ) : (
+            statCells.map((s, i) => (
+              <div key={i} className="stat-card">
+                <div className="stat-number">{s.number}</div>
+                <div className="stat-label">{s.label}</div>
+              </div>
+            ))
+          )}
         </div>
 
-        {/* Logout section */}
+        {/* Error notice (non-blocking) */}
+        {!statsLoading && statsError && (
+          <p className="stats-error-notice">
+            ⚠ Could not load live stats — showing placeholder values.
+          </p>
+        )}
+
+        {/* ── Logout ───────────────────────────────────────────────────────── */}
         <div className="logout-section fade-in-delayed">
           <button className="dashboard-btn logout-btn" onClick={handleLogout}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

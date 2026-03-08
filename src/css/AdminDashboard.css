@@ -746,3 +746,12 @@
   .brand-logo-admin .logo-icon { width: 36px; height: 36px; }
   .logout-btn  { padding: 10px 20px; font-size: 14px; }
 }
+
+.action-card.feedback {
+  background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.1));
+  border-color: rgba(139,92,246,0.3);
+}
+.action-card.feedback:hover {
+  background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(99,102,241,0.2));
+  border-color: rgba(139,92,246,0.5);
+}

@@ -409,6 +409,7 @@ function AdminDashboard() {
             { id:"overview",   label:"Overview"        },
             { id:"violations", label:"🚨 Violations"   },
             { id:"sessions",   label:"Active Sessions" },
+            { id:"feedback",   label:"🧠 AI Feedback"  },
           ].map(t => (
             <button
               key={t.id}
@@ -435,6 +436,8 @@ function AdminDashboard() {
                     icon:<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></> },
                   { label:"View Results",     path:"/admin/results",      cls:"results",
                     icon:<><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></> },
+                  { label:"AI Feedback",      path:"/admin/feedback",     cls:"feedback",
+                    icon:<><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></> },
                 ].map(a => (
                   <button key={a.label} className={`action-card ${a.cls}`} onClick={() => navigate(a.path)}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{a.icon}</svg>
@@ -572,6 +575,47 @@ function AdminDashboard() {
                 <p>There are currently no students taking exams</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── AI FEEDBACK TAB ── */}
+        {activeTab === "feedback" && (
+          <div className="slide-up" style={{ textAlign:"center", padding:"40px 20px" }}>
+            <div style={{
+              display:"inline-flex", flexDirection:"column", alignItems:"center", gap:16,
+              background:"rgba(139,92,246,0.07)", border:"1px solid rgba(139,92,246,0.2)",
+              borderRadius:20, padding:"40px 48px", maxWidth:460,
+            }}>
+              <div style={{
+                width:64, height:64, borderRadius:16,
+                background:"rgba(139,92,246,0.15)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+              }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
+                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+                  <path d="M12 8v4l3 3"/>
+                </svg>
+              </div>
+              <h2 style={{ color:"#f8fafc", margin:0, fontSize:22, fontWeight:800 }}>AI Feedback Engine</h2>
+              <p style={{ color:"#64748b", margin:0, fontSize:14, lineHeight:1.6 }}>
+                Review terminated exam sessions and correct the AI's decisions.
+                Every feedback submission trains the RL model to improve accuracy over time.
+              </p>
+              <button
+                onClick={() => navigate("/admin/feedback")}
+                style={{
+                  background:"linear-gradient(135deg,#8b5cf6,#6366f1)",
+                  border:"none", borderRadius:12, color:"#fff",
+                  padding:"12px 28px", fontSize:14, fontWeight:600,
+                  cursor:"pointer", display:"flex", alignItems:"center", gap:8,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+                Open Feedback Page
+              </button>
+            </div>
           </div>
         )}
 
